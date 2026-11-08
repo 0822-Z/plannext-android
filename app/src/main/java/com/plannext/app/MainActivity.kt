@@ -23,7 +23,12 @@ import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     private var openDateRequest by mutableStateOf<DateRequest?>(null)
-    private var permissionSnapshot by mutableStateOf(readPermissions())
+    private var permissionSnapshot by mutableStateOf(
+        PermissionSnapshot(
+            notificationsEnabled = false,
+            exactAlarmsEnabled = true,
+        ),
+    )
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) {
@@ -34,6 +39,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         openDateRequest = dateRequestFrom(intent)
+        permissionSnapshot = readPermissions()
 
         val repository = PlanRepository.getInstance(this)
         PlanAlarmScheduler(this).scheduleAll(repository.snapshot())
