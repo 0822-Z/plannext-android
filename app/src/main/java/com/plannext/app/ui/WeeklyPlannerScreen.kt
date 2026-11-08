@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -66,6 +65,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
 
 private val HourHeight = 58.dp
 private val TimeAxisWidth = 34.dp
@@ -400,7 +400,7 @@ private fun WeekGrid(
     val currentDateTime by produceState(initialValue = LocalDateTime.now()) {
         while (true) {
             value = LocalDateTime.now()
-            delay(60_000)
+            delay(1.minutes)
         }
     }
 
@@ -411,7 +411,8 @@ private fun WeekGrid(
             .background(WarmWhite),
     ) {
         val totalHeight = HourHeight * (VisibleEndHour - VisibleStartHour)
-        val gridWidth = maxWidth - TimeAxisWidth
+        val availableWidth = this.maxWidth
+        val gridWidth = availableWidth - TimeAxisWidth
         val columnWidth = gridWidth / 7f
         val todayIndex = ChronoUnit.DAYS.between(weekStart, currentDateTime.toLocalDate()).toInt()
 
@@ -804,7 +805,10 @@ private fun WeekPlannerPreview() {
         WeekPlannerScreen(
             plans = plans,
             weekStart = monday,
-            permissions = PermissionSnapshot(true, true),
+            permissions = PermissionSnapshot(
+                notificationsEnabled = true,
+                exactAlarmsEnabled = true,
+            ),
             onPreviousWeek = {},
             onNextWeek = {},
             onCurrentWeek = {},
