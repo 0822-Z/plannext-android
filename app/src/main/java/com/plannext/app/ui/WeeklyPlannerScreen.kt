@@ -1,9 +1,18 @@
 package com.plannext.app.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -28,8 +37,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +50,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -86,68 +98,113 @@ fun WeekPlannerScreen(
     onRequestNotifications: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
 ) {
-    val weekDates = remember(weekStart) { (0L..6L).map(weekStart::plusDays) }
-    val weekEnd = weekDates.last()
-    val isCurrentWeek = weekStart == mondayOf(LocalDate.now())
+    val density = LocalDensity.current
+    val swipeThreshold = with(density) { 64.dp.toPx() }
+    var dragDistance by remember { mutableFloatStateOf(0f) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Cream),
+            .background(Cream)
+            .draggable(
+                orientation = Orientation.Horizontal,
+                state = rememberDraggableState { delta ->
+                    dragDistance += delta
+                },
+                onDragStarted = { dragDistance = 0f },
+                onDragStopped = { velocity ->
+                    when {
+                        dragDistance <= -swipeThreshold || velocity <= -1_200f -> onNextWeek()
+                        dragDistance >= swipeThreshold || velocity >= 1_200f -> onPreviousWeek()
+                    }
+                    dragDistance = 0f
+                },
+            ),
     ) {
-        WeekToolbar(
-            weekStart = weekStart,
-            weekEnd = weekEnd,
-            isCurrentWeek = isCurrentWeek,
-            onPreviousWeek = onPreviousWeek,
-            onNextWeek = onNextWeek,
-            onCurrentWeek = onCurrentWeek,
-        )
-
-        if (!permissions.notificationsEnabled || !permissions.exactAlarmsEnabled) {
-            PermissionStrip(
-                permissions = permissions,
-                onRequestNotifications = onRequestNotifications,
-                onOpenExactAlarmSettings = onOpenExactAlarmSettings,
-            )
-        }
-
-        DayHeader(weekDates = weekDates)
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(horizontal = 10.dp),
-        ) {
-            WeekGrid(
-                plans = plans,
-                weekStart = weekStart,
-                onOpenSlot = onOpenSlot,
-                onEditPlan = onEditPlan,
-            )
-
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 18.dp, bottom = 18.dp)
-                    .size(56.dp)
-                    .clickable {
-                        val slot = quickAddSlot()
-                        onOpenSlot(slot.first, slot.second, slot.third)
-                    },
-                shape = CircleShape,
-                color = Night,
-                shadowElevation = 10.dp,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "＋",
-                        color = Color.White,
-                        fontSize = 25.sp,
-                        fontWeight = FontWeight.Light,
+        AnimatedContent(
+            targetState = weekStart,
+            modifier = Modifier.fillMaxSize(),
+            transitionSpec = {
+                val movingForward = targetState > initialState
+                (
+                    slideInHorizontally { width ->
+                        if (movingForward) width / 3 else -width / 3
+                    } + fadeIn()
+                    ) togetherWith (
+                    slideOutHorizontally { width ->
+                        if (movingForward) -width / 3 else width / 3
+                    } + fadeOut()
                     )
+            },
+            label = "week-swipe",
+        ) {
+            val displayedWeekStart = it
+            val weekDates = remember(displayedWeekStart) {
+                (0L..6L).map(displayedWeekStart::plusDays)
+            }
+            val weekEnd = weekDates.last()
+            val isCurrentWeek = displayedWeekStart == mondayOf(LocalDate.now())
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Cream),
+            ) {
+                WeekToolbar(
+                    weekStart = displayedWeekStart,
+                    weekEnd = weekEnd,
+                    isCurrentWeek = isCurrentWeek,
+                    onPreviousWeek = onPreviousWeek,
+                    onNextWeek = onNextWeek,
+                    onCurrentWeek = onCurrentWeek,
+                )
+
+                if (!permissions.notificationsEnabled || !permissions.exactAlarmsEnabled) {
+                    PermissionStrip(
+                        permissions = permissions,
+                        onRequestNotifications = onRequestNotifications,
+                        onOpenExactAlarmSettings = onOpenExactAlarmSettings,
+                    )
+                }
+
+                DayHeader(weekDates = weekDates)
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 10.dp),
+                ) {
+                    WeekGrid(
+                        plans = plans,
+                        weekStart = displayedWeekStart,
+                        onOpenSlot = onOpenSlot,
+                        onEditPlan = onEditPlan,
+                    )
+
+                    Surface(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .navigationBarsPadding()
+                            .padding(end = 18.dp, bottom = 18.dp)
+                            .size(56.dp)
+                            .clickable {
+                                val slot = quickAddSlot()
+                                onOpenSlot(slot.first, slot.second, slot.third)
+                            },
+                        shape = CircleShape,
+                        color = Night,
+                        shadowElevation = 10.dp,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "＋",
+                                color = Color.White,
+                                fontSize = 25.sp,
+                                fontWeight = FontWeight.Light,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -221,7 +278,7 @@ private fun WeekToolbar(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = "七日光阴 · 慢慢安排",
+                    text = "七日光阴 · 左右滑动切换",
                     color = MutedInk,
                     fontSize = 10.sp,
                     modifier = Modifier.padding(top = 2.dp),
