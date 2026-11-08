@@ -9,4 +9,5 @@
 .cxx
 /app/build
 app/release
+gradle/gradle-daemon-jvm.properties
 

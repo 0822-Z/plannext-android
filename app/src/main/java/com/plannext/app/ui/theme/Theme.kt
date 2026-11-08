@@ -10,16 +10,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Cream = Color(0xFFF7F3EC)
-val WarmWhite = Color(0xFFFFFCF8)
-val Ink = Color(0xFF202725)
-val MutedInk = Color(0xFF7A817D)
-val Accent = Color(0xFFF06C4F)
-val AccentSoft = Color(0xFFFFEAE3)
-val Sage = Color(0xFF8AA38A)
-val Line = Color(0xFFE8E1D8)
+val Cream = Color(0xFFF4EFE6)
+val WarmWhite = Color(0xFFFCFAF6)
+val Ink = Color(0xFF1B2926)
+val MutedInk = Color(0xFF69736F)
+val Accent = Color(0xFFC5684D)
+val AccentSoft = Color(0xFFF4E2D8)
+val Sage = Color(0xFF718B79)
+val Line = Color(0xFFE6DFD4)
 val CardWhite = Color(0xFFFFFFFF)
-val Night = Color(0xFF25302D)
+val Night = Color(0xFF1E312C)
 
 private val AppColorScheme = lightColorScheme(
     primary = Accent,

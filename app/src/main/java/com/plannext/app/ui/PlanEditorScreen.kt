@@ -70,10 +70,14 @@ fun PlanEditorScreen(
     val context = LocalContext.current
     val existing = target.plan
     val initialDate = existing?.let { PlanTime.toDate(it.startAtMillis) } ?: target.initialDate
-    val defaultTimes = remember(initialDate) {
+    val defaultTimes = remember(initialDate, target.initialStartTime, target.initialEndTime) {
         existing?.let {
             PlanTime.toTime(it.startAtMillis) to PlanTime.toTime(it.endAtMillis)
-        } ?: defaultPlanTimes(initialDate)
+        } ?: run {
+            val fallback = defaultPlanTimes(initialDate)
+            (target.initialStartTime ?: fallback.first) to
+                (target.initialEndTime ?: fallback.second)
+        }
     }
 
     var dateValue by rememberSaveable { mutableStateOf(initialDate.toString()) }
@@ -88,6 +92,9 @@ fun PlanEditorScreen(
     }
     var leadMinutes by rememberSaveable {
         mutableIntStateOf(existing?.leadMinutes ?: -1)
+    }
+    var isCompleted by rememberSaveable {
+        mutableStateOf(existing?.isCompleted ?: false)
     }
     var validationMessage by remember { mutableStateOf<String?>(null) }
 
@@ -130,7 +137,7 @@ fun PlanEditorScreen(
                                 endAtMillis = endAtMillis,
                                 leadMinutes = leadMinutes,
                                 category = category,
-                                isCompleted = existing?.isCompleted ?: false,
+                                isCompleted = isCompleted,
                             ),
                         )
                     }
@@ -340,6 +347,25 @@ fun PlanEditorScreen(
                     shape = RoundedCornerShape(22.dp),
                     colors = editorFieldColors(),
                 )
+
+                if (existing != null) {
+                    SectionLabel("完成状态", Modifier.padding(top = 24.dp))
+                    FlowRow(
+                        modifier = Modifier.padding(top = 9.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        ChoiceChip(
+                            text = "待完成",
+                            selected = !isCompleted,
+                            onClick = { isCompleted = false },
+                        )
+                        ChoiceChip(
+                            text = "已完成",
+                            selected = isCompleted,
+                            onClick = { isCompleted = true },
+                        )
+                    }
+                }
 
                 validationMessage?.let { message ->
                     Text(

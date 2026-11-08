@@ -61,7 +61,10 @@ class PlanWidgetProvider : AppWidgetProvider() {
             if (nextPlan == null) {
                 setTextViewText(R.id.widget_status, "NEXT · 下一项")
                 setTextViewText(R.id.widget_title, "今天留给重要的事")
-                setTextViewText(R.id.widget_time, "打开近程开始安排")
+                setTextViewText(
+                    R.id.widget_time,
+                    context.getString(R.string.widget_default_action),
+                )
                 setTextViewText(R.id.widget_meta, "你的下一次计划会出现在这里")
             } else {
                 bindPlan(this, plans, nextPlan, now)

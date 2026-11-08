@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="cream">#F7F3EC</color>
-    <color name="ink">#202725</color>
-    <color name="muted">#7A817D</color>
-    <color name="accent">#F06C4F</color>
-    <color name="launcher_background">#F7F3EC</color>
+    <color name="cream">#F4EFE6</color>
+    <color name="ink">#1B2926</color>
+    <color name="muted">#69736F</color>
+    <color name="accent">#C5684D</color>
 </resources>
 

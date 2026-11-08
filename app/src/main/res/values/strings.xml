@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">近程</string>
-    <string name="widget_description">不用打开应用，查看距离最近的一项安排。</string>
-    <string name="widget_badge_next">NEXT</string>
-    <string name="widget_default_status">今天 · 下一项</string>
-    <string name="widget_default_title">今天留给重要的事</string>
-    <string name="widget_default_action">打开近程开始安排</string>
-    <string name="widget_open_day">查看当天全部安排  ›</string>
+    <string name="app_name">有期</string>
+    <string name="widget_description">不用打开有期，查看距离最近的一项安排。</string>
+    <string name="widget_badge_next">下一项</string>
+    <string name="widget_default_status">本周 · 尚未安排</string>
+    <string name="widget_default_title">未来正待落笔</string>
+    <string name="widget_default_action">打开有期开始安排</string>
+    <string name="widget_open_day">查看本周安排  ›</string>
 </resources>
 
