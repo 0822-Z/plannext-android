@@ -258,6 +258,12 @@ fun PlanEditorScreen(
                         },
                     )
                 }
+                Text(
+                    text = "周视图展示 08:00 — 23:00",
+                    color = MutedInk,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(top = 7.dp, start = 3.dp),
+                )
 
                 SectionLabel("分类", Modifier.padding(top = 24.dp))
                 FlowRow(
@@ -525,6 +531,10 @@ private fun validatePlan(
     return when {
         title.isBlank() -> "请先写下这次计划要做什么。"
         endAtMillis <= startAtMillis -> "结束时间需要晚于开始时间。"
+        PlanTime.toTime(startAtMillis).let { it.hour * 60 + it.minute } < 8 * 60 ->
+            "开始时间不能早于 08:00。"
+        PlanTime.toTime(endAtMillis).let { it.hour * 60 + it.minute } > 23 * 60 ->
+            "结束时间不能晚于 23:00。"
         startAtMillis <= now + 30_000L -> "开始时间已过去，请选择未来的时间。"
         leadMinutes !in reminderOptions.map { it.minutes } -> "请选择提前提醒时间，这是必选项。"
         startAtMillis - leadMinutes * 60_000L < now - 30_000L ->

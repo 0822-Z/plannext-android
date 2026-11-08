@@ -4,18 +4,18 @@
         <shape android:shape="rectangle">
             <gradient
                 android:angle="315"
-                android:endColor="#3B564D"
-                android:startColor="#182723" />
+                android:endColor="#B8654D"
+                android:startColor="#E8BEA7" />
         </shape>
     </item>
     <item
-        android:width="86dp"
-        android:height="86dp"
-        android:gravity="bottom|start"
-        android:left="-38dp"
-        android:bottom="-34dp">
+        android:width="112dp"
+        android:height="112dp"
+        android:gravity="top|end"
+        android:right="-32dp"
+        android:top="-34dp">
         <shape android:shape="oval">
-            <solid android:color="#14F6F0E5" />
+            <solid android:color="#20FFF5E9" />
         </shape>
     </item>
 </layer-list>

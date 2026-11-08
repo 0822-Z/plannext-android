@@ -36,10 +36,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -69,6 +69,9 @@ import kotlin.math.roundToInt
 
 private val HourHeight = 58.dp
 private val TimeAxisWidth = 34.dp
+private const val VisibleStartHour = 8
+private const val VisibleEndHour = 23
+private const val VisibleMinutes = (VisibleEndHour - VisibleStartHour) * 60
 
 @Composable
 fun WeekPlannerScreen(
@@ -237,27 +240,41 @@ private fun WeekToolbar(
 @Composable
 private fun BrandMark() {
     Canvas(modifier = Modifier.size(31.dp)) {
-        drawCircle(color = Night)
-        val center = this.center
-        repeat(7) { index ->
-            val angle = Math.toRadians((-90.0 + index * (360.0 / 7.0)))
-            val inner = Offset(
-                x = center.x + (5.dp.toPx() * kotlin.math.cos(angle)).toFloat(),
-                y = center.y + (5.dp.toPx() * kotlin.math.sin(angle)).toFloat(),
-            )
-            val outer = Offset(
-                x = center.x + (9.dp.toPx() * kotlin.math.cos(angle)).toFloat(),
-                y = center.y + (9.dp.toPx() * kotlin.math.sin(angle)).toFloat(),
-            )
-            drawLine(
-                color = Color(0xFFF4EADD),
-                start = inner,
-                end = outer,
-                strokeWidth = 1.2.dp.toPx(),
-                cap = StrokeCap.Round,
-            )
+        drawRoundRect(
+            color = Night,
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx()),
+        )
+        val ink = Color(0xFFF5EDE1)
+        drawLine(
+            color = ink,
+            start = Offset(10.dp.toPx(), 8.dp.toPx()),
+            end = Offset(10.dp.toPx(), 12.dp.toPx()),
+            strokeWidth = 1.5.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = ink,
+            start = Offset(21.dp.toPx(), 8.dp.toPx()),
+            end = Offset(21.dp.toPx(), 12.dp.toPx()),
+            strokeWidth = 1.5.dp.toPx(),
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = ink.copy(alpha = 0.9f),
+            start = Offset(8.dp.toPx(), 15.dp.toPx()),
+            end = Offset(23.dp.toPx(), 15.dp.toPx()),
+            strokeWidth = 1.2.dp.toPx(),
+        )
+        val check = Path().apply {
+            moveTo(10.dp.toPx(), 20.dp.toPx())
+            lineTo(14.dp.toPx(), 24.dp.toPx())
+            lineTo(22.dp.toPx(), 16.dp.toPx())
         }
-        drawCircle(color = Accent, radius = 3.4.dp.toPx())
+        drawPath(
+            path = check,
+            color = Accent,
+            style = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round),
+        )
     }
 }
 
@@ -379,11 +396,7 @@ private fun WeekGrid(
     val positionedPlans = remember(plans, weekStart) {
         layoutPlansForWeek(plans, weekStart)
     }
-    val density = LocalDensity.current
-    val initialScroll = remember(density) {
-        with(density) { (HourHeight * 7).roundToPx() }
-    }
-    val scrollState = rememberScrollState(initialScroll)
+    val scrollState = rememberScrollState()
     val currentDateTime by produceState(initialValue = LocalDateTime.now()) {
         while (true) {
             value = LocalDateTime.now()
@@ -397,7 +410,7 @@ private fun WeekGrid(
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .background(WarmWhite),
     ) {
-        val totalHeight = HourHeight * 24
+        val totalHeight = HourHeight * (VisibleEndHour - VisibleStartHour)
         val gridWidth = maxWidth - TimeAxisWidth
         val columnWidth = gridWidth / 7f
         val todayIndex = ChronoUnit.DAYS.between(weekStart, currentDateTime.toLocalDate()).toInt()
@@ -427,15 +440,18 @@ private fun WeekGrid(
                                     val dayIndex = ((offset.x / size.width) * 7)
                                         .toInt()
                                         .coerceIn(0, 6)
-                                    val rawMinutes = ((offset.y / size.height) * 1440)
+                                    val rawMinutes = VisibleStartHour * 60 +
+                                        ((offset.y / size.height) * VisibleMinutes)
                                         .roundToInt()
-                                        .coerceIn(0, 1439)
                                     val startMinutes = (rawMinutes / 30f)
                                         .roundToInt()
                                         .times(30)
-                                        .coerceIn(0, 23 * 60 + 30)
+                                        .coerceIn(
+                                            VisibleStartHour * 60,
+                                            VisibleEndHour * 60 - 30,
+                                        )
                                     val endMinutes = (startMinutes + 60)
-                                        .coerceAtMost(23 * 60 + 59)
+                                        .coerceAtMost(VisibleEndHour * 60)
                                     onOpenSlot(
                                         weekStart.plusDays(dayIndex.toLong()),
                                         minutesToLocalTime(startMinutes),
@@ -455,10 +471,10 @@ private fun WeekGrid(
                             )
                         }
 
-                        for (hour in 0..24) {
+                        for (hour in 0..(VisibleEndHour - VisibleStartHour)) {
                             val y = HourHeight.toPx() * hour
                             drawLine(
-                                color = if (hour == 0 || hour == 24) {
+                                color = if (hour == 0 || hour == VisibleEndHour - VisibleStartHour) {
                                     Line
                                 } else {
                                     Line.copy(alpha = 0.78f)
@@ -467,7 +483,7 @@ private fun WeekGrid(
                                 end = Offset(size.width, y),
                                 strokeWidth = if (hour % 2 == 0) 1.dp.toPx() else 0.6.dp.toPx(),
                             )
-                            if (hour < 24) {
+                            if (hour < VisibleEndHour - VisibleStartHour) {
                                 val halfY = y + HourHeight.toPx() / 2
                                 drawLine(
                                     color = Line.copy(alpha = 0.34f),
@@ -496,19 +512,22 @@ private fun WeekGrid(
                             currentDateTime.toLocalDate() == weekStart.plusDays(todayIndex.toLong())
                         ) {
                             val minutes = currentDateTime.hour * 60 + currentDateTime.minute
-                            val y = size.height * (minutes / 1440f)
+                            val y = size.height *
+                                ((minutes - VisibleStartHour * 60) / VisibleMinutes.toFloat())
                             val xStart = columnWidth.toPx() * todayIndex
-                            drawLine(
-                                color = Accent,
-                                start = Offset(xStart, y),
-                                end = Offset(xStart + columnWidth.toPx(), y),
-                                strokeWidth = 1.3.dp.toPx(),
-                            )
-                            drawCircle(
-                                color = Accent,
-                                radius = 2.4.dp.toPx(),
-                                center = Offset(xStart + 2.dp.toPx(), y),
-                            )
+                            if (minutes in VisibleStartHour * 60..VisibleEndHour * 60) {
+                                drawLine(
+                                    color = Accent,
+                                    start = Offset(xStart, y),
+                                    end = Offset(xStart + columnWidth.toPx(), y),
+                                    strokeWidth = 1.3.dp.toPx(),
+                                )
+                                drawCircle(
+                                    color = Accent,
+                                    radius = 2.4.dp.toPx(),
+                                    center = Offset(xStart + 2.dp.toPx(), y),
+                                )
+                            }
                         }
                     }
 
@@ -519,7 +538,7 @@ private fun WeekGrid(
                             fontSize = 11.sp,
                             lineHeight = 17.sp,
                             modifier = Modifier
-                                .offset(y = HourHeight * 8 - 6.dp)
+                                .offset(y = HourHeight * 2 - 6.dp)
                                 .fillMaxWidth()
                                 .padding(horizontal = 8.dp),
                         )
@@ -529,8 +548,10 @@ private fun WeekGrid(
                         val widthFraction = item.columnWidthFraction
                         val x = columnWidth * item.dayIndex +
                             columnWidth * (item.column / widthFraction)
-                        val y = totalHeight * (item.startMinutes / 1440f)
-                        val height = (totalHeight * ((item.endMinutes - item.startMinutes) / 1440f))
+                        val y = totalHeight *
+                            ((item.startMinutes - VisibleStartHour * 60) / VisibleMinutes.toFloat())
+                        val height = (totalHeight *
+                            ((item.endMinutes - item.startMinutes) / VisibleMinutes.toFloat()))
                             .coerceAtLeast(25.dp)
                         val style = eventStyle(item.plan.category)
 
@@ -590,17 +611,25 @@ private fun TimeAxis(hourHeight: Dp, totalHeight: Dp) {
             .width(TimeAxisWidth)
             .height(totalHeight),
     ) {
-        for (hour in 0..22 step 2) {
+        for (hour in VisibleStartHour until VisibleEndHour step 2) {
             Text(
                 text = hour.toString().padStart(2, '0'),
                 color = MutedInk.copy(alpha = 0.72f),
                 fontSize = 9.sp,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(y = (hourHeight * hour) - 5.dp)
+                    .offset(y = (hourHeight * (hour - VisibleStartHour)) - 5.dp)
                     .padding(end = 5.dp),
             )
         }
+        Text(
+            text = VisibleEndHour.toString().padStart(2, '0'),
+            color = MutedInk.copy(alpha = 0.72f),
+            fontSize = 9.sp,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 5.dp, bottom = 1.dp),
+        )
     }
 }
 
@@ -640,15 +669,20 @@ private fun layoutPlansForWeek(plans: List<Plan>, weekStart: LocalDate): List<Po
         val date = weekStart.plusDays(dayIndex.toLong())
         val dayPlans = plans
             .filter { PlanTime.toDate(it.startAtMillis) == date }
-            .map { plan ->
-                val startMinutes = PlanTime.toTime(plan.startAtMillis).let { it.hour * 60 + it.minute }
-                val endMinutes = PlanTime.toTime(plan.endAtMillis).let { it.hour * 60 + it.minute }
-                DayPlan(
-                    plan = plan,
-                    startMinutes = startMinutes.coerceIn(0, 1439),
-                    endMinutes = endMinutes.coerceIn(1, 1440)
-                        .coerceAtLeast(startMinutes + 1),
-                )
+            .mapNotNull { plan ->
+                val planStart = PlanTime.toTime(plan.startAtMillis).let { it.hour * 60 + it.minute }
+                val planEnd = PlanTime.toTime(plan.endAtMillis).let { it.hour * 60 + it.minute }
+                val visibleStart = maxOf(planStart, VisibleStartHour * 60)
+                val visibleEnd = minOf(planEnd, VisibleEndHour * 60)
+                if (visibleStart >= visibleEnd) {
+                    null
+                } else {
+                    DayPlan(
+                        plan = plan,
+                        startMinutes = visibleStart,
+                        endMinutes = visibleEnd,
+                    )
+                }
             }
             .sortedWith(compareBy<DayPlan> { it.startMinutes }.thenBy { it.endMinutes })
 
@@ -717,11 +751,20 @@ private fun weekRangeLabel(start: LocalDate, end: LocalDate): String =
     }
 
 private fun quickAddSlot(now: LocalDateTime = LocalDateTime.now()): Triple<LocalDate, LocalTime, LocalTime> {
-    val totalMinutes = ((now.hour * 60 + now.minute) / 30 + 1) * 30
-    val date = if (totalMinutes >= 24 * 60) now.toLocalDate().plusDays(1) else now.toLocalDate()
-    val minuteOfDay = totalMinutes % (24 * 60)
+    val nextHalfHour = ((now.hour * 60 + now.minute) / 30 + 1) * 30
+    val candidate = maxOf(nextHalfHour, VisibleStartHour * 60)
+    val date = if (candidate > VisibleEndHour * 60 - 30) {
+        now.toLocalDate().plusDays(1)
+    } else {
+        now.toLocalDate()
+    }
+    val minuteOfDay = if (date != now.toLocalDate()) {
+        VisibleStartHour * 60
+    } else {
+        candidate
+    }
     val start = minutesToLocalTime(minuteOfDay)
-    val endMinutes = minOf(minuteOfDay + 60, 23 * 60 + 59)
+    val endMinutes = minOf(minuteOfDay + 60, VisibleEndHour * 60)
     return Triple(date, start, minutesToLocalTime(endMinutes))
 }
 

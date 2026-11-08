@@ -144,13 +144,11 @@ internal fun defaultPlanTimes(
 
     val currentMinutes = now.hour * 60 + now.minute
     val roundedMinutes = ((currentMinutes / 30) + 1) * 30
-    val start = if (roundedMinutes >= 24 * 60) {
-        LocalTime.of(23, 30)
-    } else {
-        LocalTime.of(roundedMinutes / 60, roundedMinutes % 60)
-    }
-    val proposedEnd = start.plusHours(1)
-    val end = if (proposedEnd.isAfter(start)) proposedEnd else LocalTime.of(23, 59)
+    val startMinutes = roundedMinutes
+        .coerceIn(8 * 60, 22 * 60 + 30)
+    val start = LocalTime.of(startMinutes / 60, startMinutes % 60)
+    val endMinutes = (startMinutes + 60).coerceAtMost(23 * 60)
+    val end = LocalTime.of(endMinutes / 60, endMinutes % 60)
     return start to end
 }
 

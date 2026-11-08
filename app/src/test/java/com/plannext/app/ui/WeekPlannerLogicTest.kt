@@ -46,5 +46,18 @@ class WeekPlannerLogicTest {
         assertEquals(LocalTime.of(9, 30), times.first)
         assertEquals(LocalTime.of(10, 30), times.second)
     }
+
+    @Test
+    fun defaultPlanTimes_beforeEightClampsToVisibleStart() {
+        val date = LocalDate.of(2026, 11, 8)
+
+        val times = defaultPlanTimes(
+            date = date,
+            now = LocalDateTime.of(date, LocalTime.of(7, 10)),
+        )
+
+        assertEquals(LocalTime.of(8, 0), times.first)
+        assertEquals(LocalTime.of(9, 0), times.second)
+    }
 }
 
